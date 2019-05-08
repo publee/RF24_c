@@ -49,7 +49,24 @@ void RF24_csn_d( uint8_t mode)
       #if !defined (SOFTSPI)	
 		SPI_setBitOrder(MSBFIRST);
 		SPI_setDataMode(SPI_MODE0);
+		#if !defined(F_CPU) || F_CPU < 20000000
 		SPI_setClockDivider(SPI_CLOCK_DIV2);
+		#elif F_CPU < 40000000
+			_SPI.setClockDivider(SPI_CLOCK_DIV4);
+		#elif F_CPU < 80000000
+			_SPI.setClockDivider(SPI_CLOCK_DIV8);
+		#elif F_CPU < 160000000
+			_SPI.setClockDivider(SPI_CLOCK_DIV16);
+		#elif F_CPU < 320000000
+			_SPI.setClockDivider(SPI_CLOCK_DIV32);
+		#elif F_CPU < 640000000
+			_SPI.setClockDivider(SPI_CLOCK_DIV64);
+		#elif F_CPU < 1280000000
+			_SPI.setClockDivider(SPI_CLOCK_DIV128);
+		#else
+			#error "Unsupported CPU frequency. Please set correct SPI divider."
+      #endif
+
       #endif
 #elif defined (RF24_RPi)
       if(!mode)
@@ -106,7 +123,7 @@ uint8_t RF24_read_register_m_d(uint8_t reg, uint8_t* buf, uint8_t len)
 
   *ptx++ = ( R_REGISTER | ( REGISTER_MASK & reg ) );
 
-  while (len--){ *ptx++ = NOP_; } // Dummy operation, just for reading
+  while (len--){ *ptx++ = RF24_NOP; } // Dummy operation, just for reading
   
   SPI_transfernb( (char *) rf.spi_txbuff, (char *) rf.spi_rxbuff, size);
   
@@ -143,7 +160,7 @@ uint8_t RF24_read_register_d(uint8_t reg)
   uint8_t * prx = rf.spi_rxbuff;
   uint8_t * ptx = rf.spi_txbuff;	
   *ptx++ = ( R_REGISTER | ( REGISTER_MASK & reg ) );
-  *ptx++ = NOP_ ; // Dummy operation, just for reading
+  *ptx++ = RF24_NOP ; // Dummy operation, just for reading
   
   SPI_transfernb( (char *) rf.spi_txbuff, (char *) rf.spi_rxbuff, 2);
   result = *++prx;   // result is 2nd byte of receive buffer
@@ -295,7 +312,7 @@ uint8_t RF24_read_payload(void* buf, uint8_t data_len)
 
 	*ptx++ =  R_RX_PAYLOAD;
 	while(--size) 
-		*ptx++ = NOP_;
+		*ptx++ = RF24_NOP;
 		
 	size = data_len + blank_len + 1; // Size has been lost during while, re affect
 	
@@ -358,7 +375,7 @@ uint8_t RF24_flush_tx(void )
 
 uint8_t RF24_get_status(void )
 {
-  return RF24_spiTrans( NOP_);
+  return RF24_spiTrans( RF24_NOP);
 }
 
 /****************************************************************************/
@@ -708,6 +725,7 @@ uint8_t RF24_begin(void )
   RF24_toggle_features_d();
   RF24_write_register_d(FEATURE,0 );
   RF24_write_register_d(DYNPD,0);
+  rf.dynamic_payloads_enabled = false;
 
   // Reset current status
   // Notice reset and flush is the last thing we do
@@ -730,6 +748,19 @@ uint8_t RF24_begin(void )
 
   // if setup is 0 or ff then there was no response from module
   return ( setup != 0 && setup != 0xff );
+}
+
+/****************************************************************************/
+
+bool RF24_isChipConnected()
+{
+  uint8_t setup = RF24_read_register_d(SETUP_AW);
+  if(setup >= 1 && setup <= 3)
+  {
+    return true;
+  }
+
+  return false;
 }
 
 /****************************************************************************/
@@ -986,7 +1017,7 @@ void RF24_startWrite(const void* buf, uint8_t len, const uint8_t multicast ){
   //write_payload( buf, len );
   RF24_write_payload( buf, len,multicast? W_TX_PAYLOAD_NO_ACK : W_TX_PAYLOAD ) ;
   RF24_ce_d(HIGH);
-  #if defined(CORE_TEENSY) || !defined(ARDUINO) || defined (RF24_SPIDEV) || defined (RF24_DUE)
+  #if !defined(F_CPU) || F_CPU > 20000000
 	delayMicroseconds(10);
   #endif
   RF24_ce_d(LOW);
@@ -1307,6 +1338,27 @@ void RF24_enableDynamicPayloads(void)
 }
 
 /****************************************************************************/
+void RF24_disableDynamicPayloads(void)
+{
+  // Disables dynamic payload throughout the system.  Also disables Ack Payloads
+
+  //toggle_features();
+  RF24_write_register_d(FEATURE, 0);
+
+
+  IF_SERIAL_DEBUG(printf("FEATURE=%i\r\n",read_register(FEATURE)));
+
+  // Disable dynamic payload on all pipes
+  //
+  // Not sure the use case of only having dynamic payload on certain
+  // pipes, so the library does not support it.
+  RF24_write_register_d(DYNPD, 0);
+
+  rf.dynamic_payloads_enabled = false;
+}
+
+/****************************************************************************/
+
 
 void RF24_enableAckPayload(void)
 {
@@ -1475,7 +1527,7 @@ uint8_t RF24_setDataRate(rf24_datarate_e speed)
   // HIGH and LOW '00' is 1Mbs - our default
   setup &= ~(_BV(RF_DR_LOW) | _BV(RF_DR_HIGH)) ;
   
-  #if defined(__arm__) || defined (RF24_LINUX) || defined (__ARDUINO_X86__)
+  #if !defined(F_CPU) || F_CPU > 20000000
     rf.txDelay=250;
   #else //16Mhz Arduino
     rf.txDelay=85;
@@ -1485,7 +1537,7 @@ uint8_t RF24_setDataRate(rf24_datarate_e speed)
     // Must set the RF_DR_LOW to 1; RF_DR_HIGH (used to be RF_DR) is already 0
     // Making it '10'.
     setup |= _BV( RF_DR_LOW ) ;
-  #if defined(__arm__) || defined (RF24_LINUX) || defined (__ARDUINO_X86__)
+  #if !defined(F_CPU) || F_CPU > 20000000
     rf.txDelay=450;
   #else //16Mhz Arduino
 	rf.txDelay=155;
@@ -1498,7 +1550,7 @@ uint8_t RF24_setDataRate(rf24_datarate_e speed)
     if ( speed == RF24_2MBPS )
     {
       setup |= _BV(RF_DR_HIGH);
-      #if defined(__arm__) || defined (RF24_LINUX) || defined (__ARDUINO_X86__)
+      #if !defined(F_CPU) || F_CPU > 20000000
       rf.txDelay=190;
       #else //16Mhz Arduino	  
 	  rf.txDelay=65;

@@ -50,8 +50,8 @@ typedef struct
   GPIO gpio;
 #endif
 #if !defined(__XC8) && (!defined(__SDCC) || defined(STM8S103)) 
-  uint8_t ce_pin; /**< "Chip Enable" pin, activates the RX or TX role */
-  uint8_t csn_pin; /**< SPI Chip select */
+  uint16_t ce_pin; /**< "Chip Enable" pin, activates the RX or TX role */
+  uint16_t csn_pin; /**< SPI Chip select */
 #endif
   uint16_t spi_speed; /**< SPI Bus Speed */
 #if defined (RF24_LINUX) || defined (XMEGA_D3)
@@ -171,6 +171,11 @@ typedef unsigned char raddr_t;
    * @code radio.begin() @endcode
    */
   uint8_t RF24_begin(void);
+
+  /**
+   * Checks if the chip is connected to the SPI bus
+   */
+  bool RF24_isChipConnected();
 
   /**
    * Start listening on the pipes opened for reading.
@@ -811,6 +816,17 @@ s   *
   void RF24_enableDynamicPayloads(void);
   
   /**
+   * Disable dynamically-sized payloads
+   *
+   * This disables dynamic payloads on ALL pipes. Since Ack Payloads
+   * requires Dynamic Payloads, Ack Payloads are also disabled.
+   * If dynamic payloads are later re-enabled and ack payloads are desired
+   * then enableAckPayload() must be called again as well.
+   *
+   */
+  void RF24_disableDynamicPayloads(void);
+  
+  /**
    * Enable dynamic ACKs (single write multicast or unicast) for chosen messages
    *
    * @note To enable full multicast or per-pipe multicast, use setAutoAck()
@@ -975,6 +991,13 @@ s   *
    *
    * @param address The 40-bit address of the pipe to open.
    */
+
+  /**
+   * Empty the receive buffer
+   *
+   * @return Current value of status register
+   */
+  uint8_t flush_rx(void);
 
   void RF24_openWritingPipe_d( const raddr_t* address);
 
@@ -1477,14 +1500,28 @@ s   *
  *
  * Setup:<br>
  * 1. Install the digitalIO library<br>
- * 2. Open RF24_config.h in a text editor. Uncomment the line #define SOFTSPI<br>
- * 3. In your sketch, add #include DigitalIO.h
+ * 2. Open RF24_config.h in a text editor. 
+      Uncomment the line 
+      @code
+      #define SOFTSPI
+      @endcode
+      or add the build flag/option
+      @code
+      -DSOFTSPI
+      @endcode
+ * 3. In your sketch, add
+ *     @code
+ *     #include DigitalIO.h
+ *     @endcode
  *
  * @note Note: Pins are listed as follows and can be modified by editing the RF24_config.h file<br>
  *
- *     const uint8_t SOFT_SPI_MISO_PIN = 16;
- *     const uint8_t SOFT_SPI_MOSI_PIN = 15;
- *     const uint8_t SOFT_SPI_SCK_PIN = 14;
+ *     #define SOFT_SPI_MISO_PIN 16
+ *     #define SOFT_SPI_MOSI_PIN 15
+ *     #define SOFT_SPI_SCK_PIN 14
+ * Or add the build flag/option
+ *
+ *     -DSOFT_SPI_MISO_PIN=16 -DSOFT_SPI_MOSI_PIN=15 -DSOFT_SPI_SCK_PIN=14
  *
  * <br>
  * **Alternate Hardware (UART) Driven  SPI**

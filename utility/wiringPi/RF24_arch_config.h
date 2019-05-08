@@ -14,20 +14,17 @@
 
 #include <stddef.h>
 #include "spi.h"
-#include "gpio.h"
-#include "compatibility.h"
+#include "wiringPi.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
 #include <sys/time.h>
 
-#define RF24_SPI_SPEED RF24_SPIDEV_SPEED
-
 #define _BV(x) (1<<(x))
 #define _SPI spi
 
-//#undef SERIAL_DEBUG
+#undef SERIAL_DEBUG
 #ifdef SERIAL_DEBUG
 #define IF_SERIAL_DEBUG(x) ({x;})
 #else
@@ -53,16 +50,7 @@ typedef uint16_t prog_uint16_t;
 #define PRIPSTR "%s"
 #define pgm_read_byte(p) (*(p))
 
-// Function, constant map as a result of migrating from Arduino
-#define LOW GPIO::OUTPUT_LOW
-#define HIGH GPIO::OUTPUT_HIGH
-#define INPUT GPIO::DIRECTION_IN
-#define OUTPUT GPIO::DIRECTION_OUT
-#define digitalWrite(pin, value) GPIO::write(pin, value)
-#define pinMode(pin, direction) GPIO::open(pin, direction)
-#define delay(milisec) __msleep(milisec)
-#define delayMicroseconds(usec) __usleep(usec)
-#define millis() __millis()
-
 #endif // __ARCH_CONFIG_H__
-// vim:ai:cin:sts=2 sw=2 ft=cpp
+
+
+/*@}*/
