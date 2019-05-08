@@ -12,6 +12,7 @@
  */
 
 #include "spic.h"
+#ifndef __SDCC
 
 //global variables
 SPISettings spiSettings;
@@ -419,4 +420,4 @@ void SPI_setClockDivider(uint8_t clockDiv) {
 void SPI_attachInterrupt() { SPCR |= _BV(SPIE); }
 void SPI_detachInterrupt() { SPCR &= ~_BV(SPIE); }
 
-
+#endif

@@ -11,6 +11,7 @@
  * published by the Free Software Foundation.
  */
 
+#ifndef __SDCC
 #ifndef _SPI_H_INCLUDED
 #define _SPI_H_INCLUDED
 
@@ -145,4 +146,5 @@ void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
 void init_MightInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
 
 
+#endif
 #endif

@@ -19,7 +19,7 @@
 //global object
 static RF24_ rf;
 
-#if !defined(__XC8) && !defined(__SDCC)
+#if !defined(__XC8) && (!defined(__SDCC) || defined(STM8S103))
 void RF24_csn_d( uint8_t mode)
 {
 
@@ -416,7 +416,7 @@ void RF24_print_address_register_d( const char* name, uint8_t reg, uint8_t qty)
   {
     uint8_t* bufptr;
     
-#if defined(__XC8) || defined (__SDCC)
+#if defined(__XC8) || defined(__SDCC) 
     uint8_t buffer[ADDR_WIDTH];
     #else
     uint8_t buffer[rf.addr_width];
@@ -434,7 +434,7 @@ void RF24_print_address_register_d( const char* name, uint8_t reg, uint8_t qty)
 #endif
 /****************************************************************************/
 
-#if defined(__XC8) || defined(__SDCC)   
+#if defined(__XC8) || (defined(__SDCC) && !defined(STM8S103))   
 void RF24_init(void)
 {
 #else
@@ -647,7 +647,7 @@ uint8_t RF24_begin(void )
 	delay(200);
   #else
     // Initialize pins
-#if  defined(__XC8) || defined(__SDCC)
+#if  defined(__XC8) || (defined(__SDCC) && !defined(STM8S103))
     ce_pin_t=OUTPUT;
     csn_pin_t=OUTPUT;
 #else    
@@ -1433,7 +1433,7 @@ uint8_t RF24_testRPD(void)
   
 uint8_t RF24_isValid(void) 
 { 
-#if defined (__XC8) || defined(__SDCC)
+#if defined (__XC8) || (defined(__SDCC) && !defined(STM8S103))
   return 1;
 #else    
   return rf.ce_pin != 0xff && rf.csn_pin != 0xff; 

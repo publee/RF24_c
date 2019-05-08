@@ -64,6 +64,20 @@
 #elif defined (TEENSYDUINO)
 
   #include "utility/Teensy/RF24_arch_config.h"  
+#elif defined (STM8S103)
+
+#include <Arduino.h>
+#include <SPI.h>
+#define _SPI SPI
+#ifdef SERIAL_DEBUG
+#define IF_SERIAL_DEBUG(x) ({x;})
+#else
+#define IF_SERIAL_DEBUG(x)
+#endif
+#define MINIMAL
+#define pgm_read_word(p) (*(p))
+#define pgm_read_byte(p) (*(p))
+
 //Everything else
 #else 
 
@@ -85,10 +99,8 @@
       const uint8_t SPI_MODE = 0;
       #define _SPI spi
       
-	  #else	   
-                #include "spic.h" 
-		//#include <SPI.h>
-		//#define _SPI SPI
+	  #else	 
+        #include "spic.h" 
 	  #endif
 #else
   // Define _BV for non-Arduino platforms and for Arduino DUE
@@ -144,8 +156,7 @@
 #elif defined(ARDUINO) && ! defined(__arm__) && !defined (__ARDUINO_X86__) || defined(XMEGA)
 	#include <avr/pgmspace.h>
 	#define PRIPSTR "%S"
-        #include <stdio.h>
-        #define printf_P printf
+    #include <stdio.h>
 #else
   #if ! defined(ARDUINO) // This doesn't work on Arduino DUE
 	typedef char const char;

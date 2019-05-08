@@ -49,7 +49,7 @@ typedef struct
 #if defined (MRAA)
   GPIO gpio;
 #endif
-#if !defined(__XC8) && !defined(__SDCC)
+#if !defined(__XC8) && (!defined(__SDCC) || defined(STM8S103)) 
   uint8_t ce_pin; /**< "Chip Enable" pin, activates the RX or TX role */
   uint8_t csn_pin; /**< SPI Chip select */
 #endif
@@ -139,7 +139,7 @@ typedef unsigned char raddr_t;
    * @param _cepin The pin attached to Chip Enable on the RF module
    * @param _cspin The pin attached to Chip Select
    */
-#if defined(__XC8) || defined(__SDCC) 
+#if defined(__XC8) || (defined(__SDCC) && !defined(STM8S103))  
   void RF24_init(void);
 #else
   void RF24_init( uint8_t _cepin, uint8_t _cspin);
@@ -988,7 +988,7 @@ s   *
 
 
 
-#if defined(__XC8) || defined(__SDCC) 
+#if defined(__XC8) || (defined(__SDCC) && !defined(STM8S103))
   #define RF24_csn_d(val) csn_pin=val
   #define RF24_ce_d(val)  ce_pin=val
   #define RF24_beginTransaction() csn_pin=LOW;
